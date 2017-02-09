@@ -1,0 +1,309 @@
+# Example YAML to get you started quickly.
+# Be aware that YAML has indentation based scoping.
+# Code completion support is available so start typing for available options.
+swagger: '2.0'
+
+# This is your document metadata
+info:
+  version: v1
+  title: Dosage Service
+
+# Describe your paths here
+paths:
+  # This is a path endpoint. Change it.
+  /v1/patient/{pcpPatientId}/product/{vcProductId}/dosage:
+    get:
+      description: |
+        Gets the dosage details of a patient based on a product.
+      parameters:
+        -
+          name: pcpPatientId
+          in: path
+          description: Patient Id
+          required: true
+          type: string
+          
+        - name: vcProductId
+          in: path
+          description: Product Id
+          required: true
+          type: string
+      responses:
+        200:
+          description: Successful response
+          # A schema describing your response object.
+          # Use JSON Schema format
+          schema:
+            $ref: '#/definitions/dosage'
+        404:
+          description: Not found error response
+          schema:
+            properties:
+              error:
+               type: string
+              errorcode:
+               type: string
+        401:
+          description: Unauthorized error response
+          schema:
+            properties:
+              error:
+               type: string
+              errorcode:
+               type: string
+        403:
+          description: Forbidden error response
+          schema:
+            properties:
+              error:
+               type: string
+              errorcode:
+               type: string
+        500:
+          description: Internal error response
+          schema:
+            properties:
+              error:
+               type: string
+              errorcode:
+               type: string
+ 
+    post:
+      description: |
+        Sets up the dosage calendar details.
+      parameters:
+      
+        - name: pcpPatientId
+          in: path
+          description: Patient Id
+          required: true
+          type: string
+          
+        - name: vcProductId
+          in: path
+          description: Product Id
+          required: true
+          type: string
+          
+        - name: dosages
+          in: body
+          description: Dosage details to be added
+          required: true
+          schema:
+            $ref: '#/definitions/dosageProfileRequest'
+          
+                  
+      responses:
+        201:
+          description: Successful response
+          schema:
+            $ref: '#/definitions/dosage'
+        401:
+          description: Unauthorized error response
+          schema:
+            properties:
+              error:
+               type: string
+              errorcode:
+               type: string
+        403:
+          description: Forbidden error response
+          schema:
+            properties:
+              error:
+               type: string
+              errorcode:
+               type: string
+        500:
+          description: Internal error Response
+          schema:
+            properties:
+               error:
+                type: string
+               errorcode:
+                type: string
+  
+    put:
+      description: |
+        Updates the dosage taken status.
+      parameters:
+        - name: pcpPatientId
+          in: path
+          description: Patient Id
+          required: true
+          type: string
+          
+        - name: vcProductId
+          in: path
+          description: Product Id
+          required: true
+          type: string
+        - name: dosages
+          in: body
+          description: Dosage details to be updated
+          required: true
+          schema:
+            type: array
+            $ref: '#/definitions/dosageDetails'
+      responses:
+        200:
+          description: Successful response
+          schema:
+            $ref: '#/definitions/dosage'
+        404:
+          description: Not found error response
+          schema:
+            properties:
+              error:
+               type: string
+              errorcode:
+               type: string
+        401:
+          description: Unauthorized error response
+          schema:
+            properties:
+              error:
+               type: string
+              errorcode:
+               type: string
+        403:
+          description: Forbidden error response
+          schema:
+            properties:
+              error:
+               type: string
+              errorcode:
+               type: string
+        500:
+          description: Internal error response
+          schema:
+            properties:
+              error:
+               type: string
+              errorcode:
+               type: string
+    delete:
+      description: |
+       Deletes the dosage details for a patient
+      parameters:
+        -
+          name: pcpPatientId
+          in: path
+          description: Patient Id
+          required: true
+          type: string
+          
+        - name: vcProductId
+          in: path
+          description: Product Id
+          required: true
+          type: string
+          
+      responses:
+        200:
+          description: Successful response
+        404:
+          description: Not found error response
+          schema:
+            properties:
+              error:
+               type: string
+              errorcode:
+               type: string
+        401:
+          description: Unauthorized error response
+          schema:
+            properties:
+              error:
+               type: string
+              errorcode:
+               type: string
+        403:
+          description: Forbidden error response
+          schema:
+            properties:
+              error:
+               type: string
+              errorcode:
+               type: string
+        500:
+          description: Internal error response
+          schema:
+            properties:
+              error:
+               type: string
+              errorcode:
+               type: string
+  /v1/patient/{pcpPatientId}/product/{vcProductId}/reminderstatus/{status}:
+    patch:
+      description: |
+       Updates the reminder time to take a dosage
+      parameters:
+      
+        - name: pcpPatientId
+          in: path
+          description: Patient Id
+          required: true
+          type: string
+          
+        - name: vcProductId
+          in: path
+          description: Product Id
+          required: true
+          type: string
+          
+        - name: status
+          in: path
+          description: Reminder Status
+          required: true
+          type: string
+        - name: reminderTime
+          in: body
+          description: Updates dosage reminder time. The request body is required only when the user asks for reminder.
+          required: false
+          schema:
+            type: array
+            $ref: '#/definitions/remindertime'
+      responses:
+        200:
+          description: Successful response
+
+definitions:
+  dosageProfileRequest:
+    properties:
+      reminderTime:
+        type: string
+        format: date
+      dosages:
+        type: array
+        items:
+         $ref: '#/definitions/dosageDetails'
+  dosageDetails:
+    properties:
+      dosageNumber:
+        type: integer
+      dosageDate:
+        type: string
+        format: date
+      dosageStatus:
+        type: string
+  dosage:
+    properties:
+      nextDosageDate:
+        type: string
+        format: date
+      reminderTime:
+        type: string
+        format: timestamp
+      dosages:
+       type: array
+       items:
+         $ref: '#/definitions/dosageDetails'
+       
+  remindertime:
+    properties:
+      reminderTime:
+        type: string
+        format: timestamp
+       
+      

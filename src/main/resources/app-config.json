@@ -1,0 +1,7 @@
+{
+	"totalNoOfTwoWeeksInjections": 12,
+	"daysBetweenTwoWeeksInjection": 14,
+	"daysBetweenTwoFourWeeksInjection": 28,
+	"notTakenDosageStatus": "Not taken",
+	"dosageScheduleRequiredInYears": 1
+}
