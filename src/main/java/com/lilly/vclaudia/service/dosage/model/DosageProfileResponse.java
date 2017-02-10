@@ -16,7 +16,7 @@ public class DosageProfileResponse implements Serializable {
 	
 	private Date nextDosageDate;
 	
-	private Date remiderTime;
+	private String remiderTime;
 
 	private List<Dosage> dosages;
 
@@ -28,11 +28,11 @@ public class DosageProfileResponse implements Serializable {
 		this.nextDosageDate = nextDosageDate;
 	}
 
-	public Date getRemiderTime() {
+	public String getRemiderTime() {
 		return remiderTime;
 	}
 
-	public void setRemiderTime(Date remiderTime) {
+	public void setRemiderTime(String remiderTime) {
 		this.remiderTime = remiderTime;
 	}
 

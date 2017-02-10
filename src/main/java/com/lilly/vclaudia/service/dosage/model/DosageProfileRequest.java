@@ -1,11 +1,11 @@
 package com.lilly.vclaudia.service.dosage.model;
 
 import java.io.Serializable;
-import java.util.Date;
 import java.util.List;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
 
 import org.hibernate.validator.constraints.NotEmpty;
 
@@ -19,18 +19,18 @@ public class DosageProfileRequest implements Serializable {
 	
 	private static final long serialVersionUID = 1L;
 
-	@NotNull(message = "Reminder time must not be null or empty")
-	private Date reminderTime;
+	@Pattern(regexp="((0[0-9]|1[0-9]|2[0-3]):[0-5][0,5])")
+	private String reminderTime;
 	
 	@NotEmpty(message = "Dosages must not be null or empty")
 	@Valid
 	private List<Dosage> dosages;
 
-	public Date getReminderTime() {
+	public String getReminderTime() {
 		return reminderTime;
 	}
 
-	public void setReminderTime(Date reminderTime) {
+	public void setReminderTime(String reminderTime) {
 		this.reminderTime = reminderTime;
 	}
 

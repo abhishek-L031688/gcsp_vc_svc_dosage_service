@@ -5,6 +5,8 @@ import static com.lilly.vclaudia.service.dosage.common.DosageConstants.DAYS_BETW
 import static com.lilly.vclaudia.service.dosage.common.DosageConstants.DOSAGE_SCHEDULE_REQUIRED_IN_YEARS;
 import static com.lilly.vclaudia.service.dosage.common.DosageConstants.NOT_TAKEN_DOSAGE_STATUS;
 import static com.lilly.vclaudia.service.dosage.common.DosageConstants.TOTAL_NO_OF_TWO_WEEKS_INJECTIONS;
+import static com.lilly.vclaudia.service.dosage.common.DosageConstants.DOSAGE_STATUSES;
+import static com.lilly.vclaudia.service.dosage.common.DosageConstants.NOT_LOGGED_DOSAGE_STATUS;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -37,7 +39,7 @@ import com.newrelic.agent.deps.com.google.gson.JsonParser;
 import com.newrelic.agent.deps.com.google.gson.JsonSyntaxException;
 
 /**
- * Dosage service implementation.
+ * Dosage service implementation class.
  * 
  * @author cramaswamy
  *
@@ -87,6 +89,8 @@ public class DosageServiceImpl implements DosageService {
 			dosageProfile.setDosageProfileId(dosageProfileId);
 			dosageProfile.getDosageProfileId().setProductId(productId);
 			dosageProfile.setReminderTime(dosageProfileRequest.getReminderTime());
+			// adds all the dosages which were not logged by the patient to dosage profile request.
+			dosageProfileRequest.getDosages().addAll(generateNotLoggedDosages(dosageProfileRequest.getDosages()));
 			dosageProfile.setDosages(objectMapper.writeValueAsString(dosageProfileRequest.getDosages()));
 			LOGGER.debug(String.format("Saving dosage profile request for patientId: %s and productId %s", patientId,
 					productId));
@@ -101,6 +105,66 @@ public class DosageServiceImpl implements DosageService {
 			throw new ServiceException("Error saving dosage profile information", e);
 		}
 	}
+	
+	/**
+	 * Generates dosages previous to the current date which were not 
+	 * logged by the pateint.
+	 * 
+	 * @param dosageProfileRequest
+	 * @return all not logged dosages
+	 */
+	private List<Dosage> generateNotLoggedDosages(List<Dosage> dosageList){
+		final Dosage lastDosageTakenDetails = getLastDosageTakenDetails(dosageList);
+
+		// generates not logged dosages by the patient till current date.
+		final Date dosageScheduleEndDate = new Date();
+		return generateDosageSchedule(lastDosageTakenDetails, dosageScheduleEndDate);
+	}
+
+	/**
+	 * Generates dosage schedule for the patient till dosage schedule end date.
+	 * 
+	 * @param lastDosageTakenDetails
+	 * @param dosageScheduleEndDate
+	 * @return
+	 */
+	private List<Dosage> generateDosageSchedule(final Dosage lastDosageTakenDetails, final Date dosageScheduleEndDate) {
+		Date nextScheduledDosageDate = lastDosageTakenDetails.getDosageTakenDate();
+		int dosageNumberCount = lastDosageTakenDetails.getDosageNumber();
+		List<Dosage> notLoggedDosageList = new ArrayList<>();
+		final JsonObject dosageStatusesJsonObj = appConfigJsonObject.get(DOSAGE_STATUSES).getAsJsonObject();
+		final Date currentDate = new Date();
+		while (!nextScheduledDosageDate.after(dosageScheduleEndDate)) {
+			nextScheduledDosageDate = calculateNextDosageDueDate(nextScheduledDosageDate, dosageNumberCount);
+			if(!nextScheduledDosageDate.after(dosageScheduleEndDate)){
+				if(nextScheduledDosageDate.before(currentDate)){
+					notLoggedDosageList.add(new Dosage(++dosageNumberCount, 
+							dosageStatusesJsonObj.get(NOT_LOGGED_DOSAGE_STATUS).getAsString(), nextScheduledDosageDate));
+				} else {
+					notLoggedDosageList.add(new Dosage(++dosageNumberCount, 
+							dosageStatusesJsonObj.get(NOT_TAKEN_DOSAGE_STATUS).getAsString(), nextScheduledDosageDate));
+				}
+			}
+		}
+		return notLoggedDosageList;
+	}
+
+	/**
+	 * Sorts the dosage list based on dosage number and returns the 
+	 * last dosage taken details.
+	 * 
+	 * @param dosageList
+	 * @return
+	 */
+	private Dosage getLastDosageTakenDetails(final List<Dosage> dosageList) {
+		// sorts dosages taken by the patient on ascending order of dosage number.
+		Collections.sort(dosageList,
+				(o1, o2) -> o1.getDosageNumber().compareTo(o2.getDosageNumber()));
+		// reads last dosage in dosageList which provides the last dosage taken details of patient.
+		final Dosage lastDosageTakenDetails = dosageList.get(dosageList.size() - 1);
+		LOGGER.debug(String.format("The last dosage taken date of the patient is: %s", lastDosageTakenDetails.getDosageTakenDate()));
+		return lastDosageTakenDetails;
+	}
 
 	/**
 	 * Calculates patient next dosage due date and generates 
@@ -109,46 +173,20 @@ public class DosageServiceImpl implements DosageService {
 	 * @param dosageProfileResponse
 	 */
 	private void calculateNextDosageDueDateAndGenerateDosageSchedule(DosageProfileResponse dosageProfileResponse) {
-		// sorts dosages taken by the patient on ascending order of dosage number.
-		Collections.sort(dosageProfileResponse.getDosages(),
-				(o1, o2) -> o1.getDosageNumber().compareTo(o2.getDosageNumber()));
-		// reads last dosage in dosageProfileResponse.getDosages() which provides the last dosage taken details of patient.
-		final Dosage lastDosageTakenDetails = dosageProfileResponse.getDosages()
-				.get(dosageProfileResponse.getDosages().size() - 1);
+		final Dosage lastDosageTakenDetails = getLastDosageTakenDetails(dosageProfileResponse.getDosages());
 		final Date lastDosageTakenDate = lastDosageTakenDetails.getDosageTakenDate();
 		LOGGER.debug(String.format("The last dosage taken date of the patient is: %s", lastDosageTakenDate));
 		dosageProfileResponse.setNextDosageDate(
 				calculateNextDosageDueDate(lastDosageTakenDate, lastDosageTakenDetails.getDosageNumber()));
 
-		// generates dosage schedule
-		List<Dosage> scheduledDosageList = generateDosageSchedule(lastDosageTakenDetails, lastDosageTakenDate);
-		dosageProfileResponse.getDosages().addAll(scheduledDosageList);
-	}
-
-	/**
-	 * Generates one year of dosage schedule for patient from the last dosage taken date.
-	 * 
-	 * @param lastDosageTakenDetails
-	 * @param lastDosageTakenDate
-	 * @return scheduled one year of dosage details
-	 */
-	private List<Dosage> generateDosageSchedule(final Dosage lastDosageTakenDetails, final Date lastDosageTakenDate) {
-		// adds one year to last dosage taken date to calculate dosage schedule for next one year.
 		final Calendar calendar = Calendar.getInstance();
 		calendar.setTime(lastDosageTakenDate);
+		// adds one year to last dosage taken date to calculate dosage schedule for next one year.
 		calendar.add(Calendar.YEAR, appConfigJsonObject.get(DOSAGE_SCHEDULE_REQUIRED_IN_YEARS).getAsInt());
 		final Date dosageScheduleEndDate = calendar.getTime();
-		Date nextScheduledDosageDate = lastDosageTakenDate;
-		int dosageNumberCount = lastDosageTakenDetails.getDosageNumber();
-		List<Dosage> scheduledDosageList = new ArrayList<>();
-		while (!nextScheduledDosageDate.after(dosageScheduleEndDate)) {
-			nextScheduledDosageDate = calculateNextDosageDueDate(nextScheduledDosageDate, dosageNumberCount);
-			if(!nextScheduledDosageDate.after(dosageScheduleEndDate)){
-				scheduledDosageList.add(new Dosage(++dosageNumberCount, 
-						appConfigJsonObject.get(NOT_TAKEN_DOSAGE_STATUS).getAsString(), nextScheduledDosageDate));
-			}
-		}
-		return scheduledDosageList;
+		// Generates one year of dosage schedule for patient from the last dosage taken date.
+		List<Dosage> scheduledDosageList = generateDosageSchedule(lastDosageTakenDetails, dosageScheduleEndDate);
+		dosageProfileResponse.getDosages().addAll(scheduledDosageList);
 	}
 
 	/**
@@ -191,6 +229,8 @@ public class DosageServiceImpl implements DosageService {
 			dosageProfileResponse.setRemiderTime(dosageProfile.getReminderTime());
 			List<Dosage> dosageList = objectMapper.readValue(dosageProfile.getDosages(), new TypeReference<List<Dosage>>(){});
 			dosageProfileResponse.setDosages(dosageList);
+			// adds all the dosages which were not logged by the patient to dosage profile response.
+			dosageProfileResponse.getDosages().addAll(generateNotLoggedDosages(dosageList));
 			// calculates next dosage due date and generates dosage schedule.
 			calculateNextDosageDueDateAndGenerateDosageSchedule(dosageProfileResponse);
 			return dosageProfileResponse;

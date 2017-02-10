@@ -2,6 +2,8 @@ package com.lilly.vclaudia.service.dosage.common;
 
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Calendar;
+import java.util.Date;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -17,6 +19,8 @@ public class TestCommon {
 	
 	protected static final String SAMPLE_PATIENT_ID = "patientId123";
 	protected static final String SAMPLE_PRODUCT_ID = "productId123";
+	protected static final String NOT_LOGGED_DOSAGE_STATUS = "not_logged";
+	protected static final String NOT_TAKEN_DOSAGE_STATUS = "not_taken";
 	
 	/**
 	 * builds sample dosage profile request.
@@ -86,5 +90,16 @@ public class TestCommon {
 	 */
 	protected DosageProfileId buildDosageProfileId() throws Exception{
 		return new DosageProfileId(SAMPLE_PATIENT_ID, SAMPLE_PRODUCT_ID);
+	}
+	
+	/**
+	 * Returns one month earlier date from current date.
+	 * 
+	 * @return
+	 */
+	protected Date getOneMonthEarlierDate() {
+		final Calendar calendar = Calendar.getInstance();
+		calendar.add(Calendar.MONTH, -1);
+		return calendar.getTime();
 	}
 }

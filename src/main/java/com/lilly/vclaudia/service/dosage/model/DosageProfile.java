@@ -1,7 +1,6 @@
 package com.lilly.vclaudia.service.dosage.model;
 
 import java.io.Serializable;
-import java.util.Date;
 
 import javax.persistence.Column;
 import javax.persistence.EmbeddedId;
@@ -24,16 +23,16 @@ public class DosageProfile implements Serializable {
 	private DosageProfileId dosageProfileId;
 
 	@Column(name = "REMINDER_TIME", nullable = false)
-	private Date reminderTime;
+	private String reminderTime;
 
 	@Column(name = "DOSAGE", nullable = false)
 	private String dosages;
 
-	public Date getReminderTime() {
+	public String getReminderTime() {
 		return reminderTime;
 	}
 
-	public void setReminderTime(Date reminderTime) {
+	public void setReminderTime(String reminderTime) {
 		this.reminderTime = reminderTime;
 	}
 
