@@ -2,10 +2,10 @@ package com.lilly.vclaudia.service.dosage.controller;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.doThrow;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.Test;
@@ -17,6 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lilly.vclaudia.service.dosage.common.TestCommon;
 import com.lilly.vclaudia.service.dosage.exception.EntityNotFoundException;
 import com.lilly.vclaudia.service.dosage.exception.ServiceException;
@@ -67,8 +68,14 @@ public class DosageControllerTest extends TestCommon {
 	@Test
 	public void testSaveDosage_failure_badRequestException() throws Exception {
 
+		// setup
+		DosageProfileRequest dosageProfileRequest = buildDosageProfileRequest();
+		dosageProfileRequest.setReminderTime("invalid");
+		final ObjectMapper objectMapper = new ObjectMapper();
+		String dosageProfileRequestJson = objectMapper.writeValueAsString(dosageProfileRequest); 
 		// test
-		mockMvc.perform(post("/patient/patientId/product/productId/dosage")).andExpect(status().isBadRequest());
+		mockMvc.perform(post("/patient/patientId/product/productId/dosage").contentType(MediaType.APPLICATION_JSON)
+				.content(dosageProfileRequestJson)).andExpect(status().isBadRequest());
 
 	}
 	

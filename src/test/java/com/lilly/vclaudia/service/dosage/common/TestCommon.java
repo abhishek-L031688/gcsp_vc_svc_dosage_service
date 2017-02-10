@@ -44,7 +44,7 @@ public class TestCommon {
 	 * @throws JsonParseException 
 	 */
 	protected DosageProfileRequest buildDosageProfileRequest() throws Exception {
-        ObjectMapper objectMapper = new ObjectMapper();
+		final ObjectMapper objectMapper = new ObjectMapper();
         return objectMapper.readValue(readSaveDosageRequestJson().toString(), DosageProfileRequest.class);
 	}
 	
